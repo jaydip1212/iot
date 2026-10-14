@@ -1,0 +1,288 @@
+Assignments
+-------------------------------------------------------------------------------------------------------
+1. LED Blink ( 2 LED Blink )
+Connection :
+Arduino Uno Breadboard
+13 First LED
+11 Second LED
+Code :
+void setup() {
+pinMode(13, OUTPUT);
+pinMode(11, OUTPUT);
+}
+void loop() {
+digitalWrite(13, HIGH);
+delay(100);
+digitalWrite(13, LOW);
+delay(100);
+digitalWrite(11, HIGH);
+delay(100);
+digitalWrite(11, LOW);
+delay(100);
+}
+2. 3 LED Blink ( Traffic Signal )
+Connection :
+Arduino Uno Breadboard
+13 Red LED
+12 Yellow LED
+11 Green LED
+Code :
+int redLed = 13;
+int yellowLed = 12;
+int greenLed = 11;
+void setup() {
+pinMode(13, OUTPUT);
+pinMode(12, OUTPUT);
+pinMode(11, OUTPUT);
+}
+void loop() {
+digitalWrite(redLed, HIGH);
+delay(100);
+digitalWrite(redLed, LOW);
+delay(100);
+digitalWrite(yellowLed, HIGH);
+delay(100);
+digitalWrite(yellowLed, LOW);
+delay(100);
+digitalWrite(greenLed, HIGH);
+delay(100);
+digitalWrite(greenLed, LOW);
+delay(100);
+}
+3. Ultra Sonic Sensor ( Distance Sensor )
+Connection:
+Arduino Uno Ultra Sonic Sensor
+5V VCC
+3 Trig
+2 Echo
+GND GND
+Code :
+int trigPin = 3;
+int echoPin = 2;
+int greenLED = 13;
+int redLED = 12;
+long duration;
+float distance;
+void setup()
+{
+pinMode(trigPin, OUTPUT);
+pinMode(echoPin, INPUT);
+pinMode(greenLED, OUTPUT);
+pinMode(redLED, OUTPUT);
+Serial.begin(9600);
+}
+void loop()
+{
+digitalWrite(trigPin, LOW);
+delayMicroseconds(2);
+digitalWrite(trigPin, HIGH);
+delayMicroseconds(10);
+digitalWrite(trigPin, LOW);
+duration = pulseIn(echoPin, HIGH);
+distance = duration / 58.0;
+Serial.print("Distance: ");
+Serial.print(distance);
+Serial.println(" cm");
+if (distance > 10)
+{
+digitalWrite(greenLED, HIGH);
+digitalWrite(redLED, LOW);
+}
+else
+{
+digitalWrite(greenLED, LOW);
+digitalWrite(redLED, HIGH);
+}
+delay(500);
+}
+4. IR Sensor [ InfraRed Sensor ( Distance ) ]
+Connection :
+Arduino Uno IR Sensor
+5V VCC
+2 OUT
+GND GND
+Code :
+const int irSensorPin = 2;
+void setup() {
+// put your setup code here, to run once:
+pinMode (irSensorPin,INPUT);
+Serial.begin(9600);
+}
+void loop() {
+// put your main code here, to run repeatedly:
+int SensorValue = digitalRead (irSensorPin);
+if (SensorValue==0){
+Serial.println("Object Here");
+}
+else{
+Serial.println("no object");
+}
+delay(1000);
+}
+5. LCD with Ultra Sonic Sensor
+Connection :
+Arduino Uno Ultra Sonic Sensor
+5V VCC
+D9 Trig
+D10 Echo
+GND GND
+Arduino Uno LCD
+GND GND
+3V VCC
+A4 SDA
+A5 SCL
+Steps For LiquidCrystal_I2C
+● First Check Library & Click
+● Sketch – include library – liquid_I2C
+● Install : Tools – Manage Libraries – liquidcrystal_I2C by frank
+Code :
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+int trigPin = 3;
+int echoPin = 2;
+long duration;
+float distance;
+void setup()
+{
+pinMode(trigPin, OUTPUT);
+pinMode(echoPin, INPUT);
+Serial.begin(9600);
+lcd.init();
+lcd.clear();
+lcd.backlight();
+// Name
+lcd.setCursor(0, 0);
+lcd.print("Hello Prem
+");
+delay(1500);
+lcd.clear();
+}
+void loop()
+{
+// Ultrasonic pulse
+digitalWrite(trigPin, LOW);
+delayMicroseconds(2);
+digitalWrite(trigPin, HIGH);
+delayMicroseconds(10);
+digitalWrite(trigPin, LOW);
+// Echo receive
+duration = pulseIn(echoPin, HIGH);
+// Distance calculate
+distance = duration / 58.0;
+// LCD
+lcd.setCursor(0, 0);
+lcd.print("Hello Prem ");
+lcd.setCursor(0, 1);
+lcd.print("Distance: ");
+lcd.print(distance);
+lcd.print(" cm ");
+// Serial Monitor
+Serial.print("Hello Prem | Distance: ");
+Serial.print(distance);
+Serial.println(" cm");
+delay(500);
+}
+6. LDR Sensor ( Street Light )
+Connection :
+Arduino Uno LDR
+VCC 5V
+GND GND
+D0 A0
+Arduino Uno Breadboard ( led light )
+13 LED Positive part ( big )
+GND LED Negative part ( small )
+Code :
+void setup() {
+pinMode(A0,INPUT);
+pinMode(13, OUTPUT);
+Serial.begin(9600);
+}
+void loop() {
+// put your main code here, to run repeatedly:
+int ana = analogRead(A0);
+int threshold = 512;
+if (ana > threshold){
+Serial.println("ON");
+d
+i
+g
+i
+t
+a
+l
+W
+r
+i
+t
+e
+(
+1
+3
+,
+H
+I
+G
+H
+)
+;
+}
+e
+l
+s
+e
+{
+S
+e
+r
+i
+a
+l
+.
+p
+r
+i
+n
+t
+l
+n
+(
+"
+O
+F
+F
+"
+)
+;
+d
+i
+g
+i
+t
+a
+l
+W
+r
+i
+t
+e
+(
+1
+3
+,
+L
+O
+W
+)
+;
+}d
+e
+l
+a
+y
+(
+2
+0
+0
+)
+;
+}
