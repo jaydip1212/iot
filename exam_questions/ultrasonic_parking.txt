@@ -1,0 +1,56 @@
+QUESTION 02 - VERIFIED PARKING SLOT
+===================================
+
+Problem
+Show a parking slot as Occupied only after distance stays below 20 cm for 3 seconds. Verify departure for 2 seconds before showing Available.
+
+Components and pins
+Arduino Uno; ultrasonic Trig D3, Echo D2; red LED D13; green LED D11; I2C LCD SDA A4, SCL A5, address 0x27.
+
+Tasks (10 marks each)
+1. Measure and print distance in centimeters.
+2. Verify a new Occupied state for 3 continuous seconds.
+3. Verify Available for 2 seconds; show Verifying and use the correct LEDs/LCD status.
+
+ANSWER
+The ultrasonic formula is duration / 58.0. A pulseIn timeout avoids waiting indefinitely. millis() keeps the verification timer non-blocking.
+
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27,16,2);
+const int trig=3, echo=2, red=13, green=11;
+bool occupied=false, candidate=false, timing=false;
+unsigned long candidateSince=0, lastPrint=0;
+float distanceCm(){
+  digitalWrite(trig,LOW); delayMicroseconds(2);
+  digitalWrite(trig,HIGH); delayMicroseconds(10); digitalWrite(trig,LOW);
+  unsigned long us=pulseIn(echo,HIGH,30000UL);
+  if(us==0) return -1;
+  return us/58.0;
+}
+void setup(){
+  pinMode(trig,OUTPUT); pinMode(echo,INPUT);
+  pinMode(red,OUTPUT); pinMode(green,OUTPUT);
+  Serial.begin(9600); lcd.init(); lcd.backlight();
+}
+void loop(){
+  unsigned long now=millis();
+  float d=distanceCm();
+  if(d<0) timing=false;
+  else {
+    bool wantsOccupied=d<20;
+    if(wantsOccupied==occupied){ timing=false; }
+    else {
+      if(!timing || candidate!=wantsOccupied){ candidate=wantsOccupied; candidateSince=now; timing=true; }
+      unsigned long needed=candidate?3000UL:2000UL;
+      if(now-candidateSince>=needed){ occupied=candidate; timing=false; }
+    }
+  }
+  digitalWrite(red,occupied?HIGH:LOW); digitalWrite(green,occupied?LOW:HIGH);
+  if(now-lastPrint>=500){
+    lastPrint=now; Serial.print("Distance: "); Serial.println(d);
+  }
+  lcd.setCursor(0,0); lcd.print("Distance: ");
+  if(d<0) lcd.print("No Echo   "); else { lcd.print(d,1); lcd.print(" cm   "); }
+  lcd.setCursor(0,1);
+  if(timing) lcd.print("Verifying...    "); else lcd.print(occupied?"Occupied        ":"Available       ");
+}

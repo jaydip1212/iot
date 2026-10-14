@@ -1,0 +1,52 @@
+QUESTION 03 - LIGHT AND WAVE CHALLENGE
+======================================
+
+Problem
+In a bright area, run a 20-second game. The player waves a hand at the IR sensor; each separate wave adds one point.
+
+Components and pins
+Arduino Uno; LDR A0; IR OUT D2 (LOW = detected); green LED D11; red LED D13; I2C LCD SDA A4, SCL A5, address 0x27; Serial Monitor.
+
+Tasks (10 marks each)
+1. Show LDR reading/state and allow a round to start only when Bright.
+2. Count each separate hand wave once and show the live score.
+3. Stop after 20 seconds, show final score, and signal completion.
+
+ANSWER
+Calibrate the LDR threshold; this sketch assumes readings below 512 mean Bright. Send S in Serial Monitor to start/restart while Bright and with the hand clear. A wave counts once on IR detection and cannot count again until the sensor clears.
+
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27,16,2);
+const int lightPin=A0, irPin=2, green=11, red=13, threshold=512;
+bool running=false, done=false, wasDetected=false;
+int score=0;
+unsigned long started=0, lastShow=0;
+void setup(){
+  pinMode(irPin,INPUT); pinMode(green,OUTPUT); pinMode(red,OUTPUT);
+  Serial.begin(9600); lcd.init(); lcd.backlight();
+}
+void loop(){
+  unsigned long now=millis();
+  int light=analogRead(lightPin);
+  bool bright=light<threshold;
+  bool detected=digitalRead(irPin)==LOW;
+  if(Serial.available()){
+    char c=Serial.read();
+    if((c=='s'||c=='S') && bright && !detected){ score=0; started=now; running=true; done=false; }
+  }
+  if(running){
+    if(detected && !wasDetected) score++;
+    if(now-started>=20000UL){ running=false; done=true; }
+  }
+  wasDetected=detected;
+  digitalWrite(green,running?HIGH:LOW); digitalWrite(red,done?HIGH:LOW);
+  if(now-lastShow>=200){
+    lastShow=now;
+    lcd.setCursor(0,0); lcd.print("LDR:"); lcd.print(light); lcd.print(bright?" Bright ":" Dim    ");
+    lcd.setCursor(0,1);
+    if(running){ lcd.print("Score:"); lcd.print(score); lcd.print(" Time:"); lcd.print(20-(now-started)/1000); lcd.print(" "); }
+    else if(done){ lcd.print("Final score: "); lcd.print(score); lcd.print("   "); }
+    else lcd.print("Send S to start ");
+    Serial.print("LDR="); Serial.print(light); Serial.print(" score="); Serial.println(score);
+  }
+}

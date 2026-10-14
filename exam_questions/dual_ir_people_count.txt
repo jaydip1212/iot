@@ -1,0 +1,44 @@
+QUESTION 06 - TWO-WAY PEOPLE COUNTER
+====================================
+
+Problem
+Use two IR sensors in a doorway. A then B means entry; B then A means exit. Ignore incomplete sequences.
+
+Components and pins
+Arduino Uno; IR sensor A OUT D2, sensor B OUT D4 (LOW = detected); I2C LCD SDA A4, SCL A5, address 0x27.
+
+Tasks (10 marks each)
+1. Read and display both sensor states.
+2. Recognize entry/exit order within 2 seconds; ignore incomplete sequences.
+3. Display the number inside, avoid duplicate counts, and never allow a negative count.
+
+ANSWER
+Mount the sensors in order across the doorway. The program waits for both sensors to clear after a completed or timed-out sequence before accepting another person.
+
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27,16,2);
+const int sensorA=2, sensorB=4;
+int inside=0, phase=0;
+unsigned long phaseStarted=0;
+void setup(){
+  pinMode(sensorA,INPUT); pinMode(sensorB,INPUT);
+  Serial.begin(9600); lcd.init(); lcd.backlight();
+}
+void loop(){
+  unsigned long now=millis();
+  bool a=digitalRead(sensorA)==LOW, b=digitalRead(sensorB)==LOW;
+  if(phase==0){
+    if(a && !b){ phase=1; phaseStarted=now; }
+    else if(b && !a){ phase=2; phaseStarted=now; }
+  } else if(phase==1){
+    if(now-phaseStarted>2000UL) phase=4;
+    else if(b){ inside++; phase=3; }
+  } else if(phase==2){
+    if(now-phaseStarted>2000UL) phase=4;
+    else if(a){ if(inside>0) inside--; phase=3; }
+  }
+  if((phase==3 || phase==4) && !a && !b) phase=0;
+  lcd.setCursor(0,0); lcd.print("Inside: "); lcd.print(inside); lcd.print("       ");
+  lcd.setCursor(0,1); lcd.print("A:"); lcd.print(a?"ON ":"OFF"); lcd.print(" B:"); lcd.print(b?"ON ":"OFF"); lcd.print("   ");
+  Serial.print("A="); Serial.print(a); Serial.print(" B="); Serial.print(b); Serial.print(" Inside="); Serial.println(inside);
+}

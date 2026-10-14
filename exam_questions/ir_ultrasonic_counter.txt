@@ -1,0 +1,45 @@
+QUESTION 11 - CONFIRMED OBJECT COUNTER
+======================================
+
+Problem
+Count an object once when both the IR sensor detects it and ultrasonic distance is below 20 cm.
+
+Components and pins
+Arduino Uno; IR OUT D4 (LOW = detected); ultrasonic Trig D3, Echo D2; green LED D11; I2C LCD SDA A4, SCL A5, address 0x27.
+
+Tasks (10 marks each)
+1. Print IR state and ultrasonic distance.
+2. Count only when both sensors confirm an object; require IR clear before another count.
+3. Show count and Confirmed/Waiting on LCD and Serial.
+
+ANSWER
+Mount both sensors so they watch the same point. The IR edge arms a single count, and the sensor must clear before another object can be counted.
+
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27,16,2);
+const int irPin=4, trig=3, echo=2, led=11;
+bool armed=true;
+int count=0;
+float readCm(){
+  digitalWrite(trig,LOW); delayMicroseconds(2);
+  digitalWrite(trig,HIGH); delayMicroseconds(10); digitalWrite(trig,LOW);
+  unsigned long us=pulseIn(echo,HIGH,30000UL);
+  if(us==0) return -1;
+  return us/58.0;
+}
+void setup(){
+  pinMode(irPin,INPUT); pinMode(trig,OUTPUT); pinMode(echo,INPUT); pinMode(led,OUTPUT);
+  Serial.begin(9600); lcd.init(); lcd.backlight();
+}
+void loop(){
+  bool detected=digitalRead(irPin)==LOW;
+  float d=readCm();
+  bool confirmed=detected && d>=0 && d<20;
+  if(confirmed && armed){ count++; armed=false; }
+  if(!detected) armed=true;
+  digitalWrite(led,confirmed?HIGH:LOW);
+  lcd.setCursor(0,0); lcd.print("Count: "); lcd.print(count); lcd.print("        ");
+  lcd.setCursor(0,1); lcd.print(confirmed?"Confirmed       ":"Waiting         ");
+  Serial.print("IR="); Serial.print(detected?"Detected":"Clear");
+  Serial.print(" distance="); Serial.print(d); Serial.print(" count="); Serial.println(count);
+}

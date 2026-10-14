@@ -1,0 +1,56 @@
+QUESTION 12 - NIGHT INTRUSION ALERT
+===================================
+
+Problem
+Raise an intrusion alert only when the area is Dim, the IR sensor detects an object, and the ultrasonic sensor measures less than 50 cm.
+
+Components and pins
+Arduino Uno; LDR A0; IR OUT D4 (LOW = detected); ultrasonic Trig D3, Echo D2; red LED D13; green LED D11; I2C LCD SDA A4, SCL A5, address 0x27.
+
+Tasks (10 marks each)
+1. Read and report all sensors; calibrate Bright/Dim.
+2. Confirm intrusion only when all three conditions are true.
+3. Flash red and show INTRUDER; otherwise show SAFE with green LED. Clear alert when safe.
+
+ANSWER
+This sketch assumes LDR above 512 is Dim. Change the threshold/comparison to suit your circuit. The conditions must remain true for 300 ms to reject a brief false reading.
+
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27,16,2);
+const int lightPin=A0, irPin=4, trig=3, echo=2, red=13, green=11;
+const int threshold=512;
+bool checking=false, alert=false, redState=false;
+unsigned long conditionSince=0, blinkAt=0, lastShow=0;
+float readCm(){
+  digitalWrite(trig,LOW); delayMicroseconds(2);
+  digitalWrite(trig,HIGH); delayMicroseconds(10); digitalWrite(trig,LOW);
+  unsigned long us=pulseIn(echo,HIGH,30000UL);
+  if(us==0) return -1;
+  return us/58.0;
+}
+void setup(){
+  pinMode(irPin,INPUT); pinMode(trig,OUTPUT); pinMode(echo,INPUT);
+  pinMode(red,OUTPUT); pinMode(green,OUTPUT);
+  Serial.begin(9600); lcd.init(); lcd.backlight();
+}
+void loop(){
+  unsigned long now=millis();
+  int light=analogRead(lightPin);
+  bool dim=light>threshold, detected=digitalRead(irPin)==LOW;
+  float d=readCm();
+  bool condition=dim && detected && d>=0 && d<50;
+  if(condition){
+    if(!checking){ checking=true; conditionSince=now; }
+    if(now-conditionSince>=300UL) alert=true;
+  } else { checking=false; alert=false; }
+  if(alert && now-blinkAt>=150){ blinkAt=now; redState=!redState; }
+  if(!alert) redState=false;
+  digitalWrite(red,redState); digitalWrite(green,alert?LOW:HIGH);
+  if(now-lastShow>=250){
+    lastShow=now;
+    lcd.setCursor(0,0); lcd.print("LDR:"); lcd.print(light); lcd.print(dim?" Dim   ":" Bright");
+    lcd.setCursor(0,1); lcd.print(alert?"INTRUDER       ":"SAFE            ");
+    Serial.print("LDR="); Serial.print(light); Serial.print(" IR="); Serial.print(detected);
+    Serial.print(" distance="); Serial.print(d); Serial.print(" alert="); Serial.println(alert);
+  }
+}

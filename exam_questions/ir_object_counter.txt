@@ -1,0 +1,44 @@
+QUESTION 05 - TIMED OBJECT COUNTER
+==================================
+
+Problem
+Count distinct objects detected by an IR sensor during a 60-second session. Show the live count and elapsed seconds.
+
+Components and pins
+Arduino Uno; IR OUT D2 (LOW = detected); I2C LCD SDA A4, SCL A5, address 0x27; LED D13.
+
+Tasks (10 marks each)
+1. Read and report the IR state.
+2. Count each pass once; wait for the sensor to clear before counting again.
+3. Run for 60 seconds, display count/time, then stop and turn on the LED.
+
+ANSWER
+This sketch starts a session when the Arduino resets. Pressing the board's reset button starts another session. millis() keeps the sensor responsive.
+
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27,16,2);
+const int irPin=2, led=13;
+bool wasDetected=false, finished=false;
+unsigned long started, lastShow=0;
+int count=0;
+void setup(){
+  pinMode(irPin,INPUT); pinMode(led,OUTPUT);
+  Serial.begin(9600); lcd.init(); lcd.backlight(); started=millis();
+}
+void loop(){
+  unsigned long now=millis();
+  bool detected=digitalRead(irPin)==LOW;
+  if(!finished && now-started<60000UL){
+    if(detected && !wasDetected){ count++; Serial.print("Count: "); Serial.println(count); }
+  } else finished=true;
+  wasDetected=detected;
+  digitalWrite(led,finished?HIGH:LOW);
+  if(now-lastShow>=250){
+    lastShow=now;
+    lcd.setCursor(0,0); lcd.print(finished?"Session complete ":"Object count: "); lcd.print(count); lcd.print("   ");
+    lcd.setCursor(0,1);
+    if(finished) lcd.print("Reset to restart ");
+    else { lcd.print("Elapsed: "); lcd.print((now-started)/1000); lcd.print(" sec   "); }
+    Serial.print("IR: "); Serial.println(detected?"Detected":"Clear");
+  }
+}

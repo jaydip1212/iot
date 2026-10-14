@@ -1,0 +1,47 @@
+QUESTION 01 - SMART SHELF SECURITY
+==================================
+
+Problem
+Monitor shelf light and IR interruptions. In dim conditions, alert after 3 detections within 5 seconds.
+
+Components and pins
+Arduino Uno; LDR A0; IR OUT D2 (LOW = detected); alert LED D13; I2C LCD SDA A4, SCL A5, address 0x27.
+
+Tasks (10 marks each)
+1. Read LDR and print its value and Bright/Dim state.
+2. Count distinct IR events and display state/count on LCD.
+3. In Dim mode, flash the LED and show TAMPER at 3 events in 5 seconds. Clear when Bright.
+
+ANSWER
+Calibrate the threshold using Serial Monitor. This example assumes an LDR reading above 512 means Dim; reverse the comparison if your circuit reads the opposite way. Count an event only on the clear-to-detected transition.
+
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+const int lightPin=A0, irPin=2, alertLed=13;
+const int threshold=512;
+bool wasDetected=false, alert=false, ledState=false;
+int events=0;
+unsigned long windowStart=0, blinkAt=0;
+void setup(){
+  pinMode(irPin,INPUT); pinMode(alertLed,OUTPUT);
+  Serial.begin(9600); lcd.init(); lcd.backlight();
+}
+void loop(){
+  unsigned long now=millis();
+  int light=analogRead(lightPin);
+  bool dim=light>threshold;
+  bool detected=digitalRead(irPin)==LOW;
+  if(!dim){ events=0; alert=false; }
+  if(dim && detected && !wasDetected){
+    if(events==0 || now-windowStart>5000){ events=0; windowStart=now; }
+    events++;
+    if(events>=3 && now-windowStart<=5000) alert=true;
+  }
+  wasDetected=detected;
+  if(alert && now-blinkAt>=150){ blinkAt=now; ledState=!ledState; }
+  if(!alert) ledState=false;
+  digitalWrite(alertLed,ledState);
+  lcd.setCursor(0,0); lcd.print(dim?"Dim ":"Bright "); lcd.print("IR:"); lcd.print(detected?"YES ":"NO  ");
+  lcd.setCursor(0,1); lcd.print(alert?"TAMPER ":"Events: "); lcd.print(events); lcd.print("   ");
+  Serial.print("LDR="); Serial.print(light); Serial.print(" state="); Serial.print(dim?"Dim":"Bright"); Serial.print(" events="); Serial.println(events);
+}

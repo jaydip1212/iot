@@ -1,0 +1,51 @@
+QUESTION 09 - DESK PRESENCE TIMER
+==================================
+
+Problem
+Measure how long an object/person remains in front of the IR sensor. End a session only after the sensor has been clear for 2 seconds.
+
+Components and pins
+Arduino Uno; IR OUT D2 (LOW = detected); LED D13; I2C LCD SDA A4, SCL A5, address 0x27.
+
+Tasks (10 marks each)
+1. Show Present/Empty on Serial.
+2. Start a timer on first detection; show elapsed seconds and turn on the LED.
+3. After 2 continuous seconds clear, display the completed duration and stop the LED.
+
+ANSWER
+The measured duration ends at the first clear reading; the following 2 seconds confirm that the session really ended. A new detection starts a fresh session.
+
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27,16,2);
+const int irPin=2, led=13;
+bool active=false, clearTiming=false;
+unsigned long started=0, clearSince=0, lastShow=0;
+unsigned long completedSeconds=0;
+void setup(){
+  pinMode(irPin,INPUT); pinMode(led,OUTPUT);
+  Serial.begin(9600); lcd.init(); lcd.backlight();
+}
+void loop(){
+  unsigned long now=millis();
+  bool present=digitalRead(irPin)==LOW;
+  if(present){
+    if(!active){ active=true; started=now; }
+    clearTiming=false;
+  } else if(active){
+    if(!clearTiming){ clearTiming=true; clearSince=now; }
+    if(now-clearSince>=2000UL){
+      completedSeconds=(clearSince-started)/1000UL;
+      active=false; clearTiming=false;
+      Serial.print("Session duration: "); Serial.println(completedSeconds);
+    }
+  }
+  digitalWrite(led,active?HIGH:LOW);
+  if(now-lastShow>=250){
+    lastShow=now;
+    lcd.setCursor(0,0); lcd.print(present?"Present         ":"Empty           ");
+    lcd.setCursor(0,1);
+    if(active){ lcd.print("Time: "); lcd.print((now-started)/1000UL); lcd.print(" sec     "); }
+    else { lcd.print("Last: "); lcd.print(completedSeconds); lcd.print(" sec       "); }
+    Serial.println(present?"Present":"Empty");
+  }
+}

@@ -1,0 +1,42 @@
+QUESTION 04 - AUTOMATIC ROOM LIGHT
+==================================
+
+Problem
+Turn a room LED on only when the area is Dim and an IR sensor detects presence. Keep it on for 30 seconds after presence disappears.
+
+Components and pins
+Arduino Uno; LDR A0; IR OUT D2 (LOW = detected); lamp LED D13; Serial Monitor.
+
+Tasks (10 marks each)
+1. Print sensor readings and interpreted states.
+2. Turn the LED on for Dim + Present, and off immediately when Bright.
+3. Hold the LED on for 30 seconds after the last detection; restart the timer on a new detection.
+
+ANSWER
+Calibrate the threshold. This example assumes an LDR reading above 512 means Dim. The hold timer uses millis(), not a blocking 30-second delay.
+
+const int lightPin=A0, irPin=2, lamp=13, threshold=512;
+bool wasPresent=false, holdActive=false;
+unsigned long lastSeen=0, lastPrint=0;
+void setup(){
+  pinMode(irPin,INPUT); pinMode(lamp,OUTPUT); Serial.begin(9600);
+}
+void loop(){
+  unsigned long now=millis();
+  int light=analogRead(lightPin);
+  bool dim=light>threshold;
+  bool present=digitalRead(irPin)==LOW;
+  if(present){ lastSeen=now; holdActive=true; }
+  else if(wasPresent){ lastSeen=now; holdActive=true; }
+  if(!dim) holdActive=false;
+  if(holdActive && now-lastSeen>=30000UL) holdActive=false;
+  bool lampOn=dim && (present || holdActive);
+  digitalWrite(lamp,lampOn?HIGH:LOW);
+  wasPresent=present;
+  if(now-lastPrint>=500){
+    lastPrint=now;
+    Serial.print("LDR="); Serial.print(light); Serial.print(" ");
+    Serial.print(dim?"Dim":"Bright"); Serial.print(" IR=");
+    Serial.println(present?"Present":"Empty");
+  }
+}

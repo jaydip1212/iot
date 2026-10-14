@@ -1,0 +1,52 @@
+QUESTION 10 - NIGHT-TIME SENSOR GATE
+====================================
+
+Problem
+Count distinct IR interruptions only in Dim conditions. Flash an alert if 5 or more events occur in a rolling 10-second window.
+
+Components and pins
+Arduino Uno; LDR A0; IR OUT D2 (LOW = detected); red LED D13; yellow LED D12; I2C LCD SDA A4, SCL A5, address 0x27.
+
+Tasks (10 marks each)
+1. Show LDR/IR readings and Bright/Dim and Detected/Clear states.
+2. Count distinct events in the rolling time window.
+3. At 5 events, flash red and show ALERT; otherwise show Dim monitoring. Clear count when Bright.
+
+ANSWER
+This sketch assumes LDR above 512 is Dim. It stores up to five event times and discards events older than 10 seconds. Each IR event is counted once per clear-to-detected transition.
+
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27,16,2);
+const int lightPin=A0, irPin=2, red=13, yellow=12, threshold=512;
+unsigned long eventTimes[5], blinkAt=0, lastShow=0;
+int eventCount=0;
+bool wasDetected=false, redState=false;
+void setup(){
+  pinMode(irPin,INPUT); pinMode(red,OUTPUT); pinMode(yellow,OUTPUT);
+  Serial.begin(9600); lcd.init(); lcd.backlight();
+}
+void loop(){
+  unsigned long now=millis();
+  int light=analogRead(lightPin);
+  bool dim=light>threshold, detected=digitalRead(irPin)==LOW;
+  if(!dim) eventCount=0;
+  while(eventCount>0 && now-eventTimes[0]>10000UL){
+    for(int i=1;i<eventCount;i++) eventTimes[i-1]=eventTimes[i];
+    eventCount--;
+  }
+  if(dim && detected && !wasDetected){
+    if(eventCount==5){ for(int i=1;i<5;i++) eventTimes[i-1]=eventTimes[i]; eventCount=4; }
+    eventTimes[eventCount++]=now;
+  }
+  wasDetected=detected;
+  bool alert=dim && eventCount>=5;
+  if(alert && now-blinkAt>=150){ blinkAt=now; redState=!redState; }
+  if(!alert) redState=false;
+  digitalWrite(red,redState); digitalWrite(yellow,(dim && !alert)?HIGH:LOW);
+  if(now-lastShow>=250){
+    lastShow=now;
+    lcd.setCursor(0,0); lcd.print(dim?"Dim ":"Bright "); lcd.print("Events:"); lcd.print(eventCount); lcd.print(" ");
+    lcd.setCursor(0,1); lcd.print(alert?"ALERT           ":"Monitoring      ");
+    Serial.print("LDR="); Serial.print(light); Serial.print(" IR="); Serial.print(detected); Serial.print(" count="); Serial.println(eventCount);
+  }
+}

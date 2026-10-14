@@ -1,0 +1,49 @@
+QUESTION 07 - DISTANCE TRAFFIC SIGNAL
+=====================================
+
+Problem
+Measure object distance and show a three-color proximity warning: Green above 30 cm, Yellow from 15 through 30 cm, Red below 15 cm.
+
+Components and pins
+Arduino Uno; ultrasonic Trig D3, Echo D2; red LED D13, yellow LED D12, green LED D11; I2C LCD SDA A4, SCL A5, address 0x27.
+
+Tasks (10 marks each)
+1. Measure distance in centimeters and print it to Serial.
+2. Turn on the LED for the matching distance zone.
+3. Show distance and zone on LCD; on no echo, show No Echo and turn all LEDs off.
+
+ANSWER
+The distance formula is echo duration divided by 58.0. A zero pulseIn result means no echo; the code handles that separately.
+
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27,16,2);
+const int trig=3, echo=2, red=13, yellow=12, green=11;
+float readCm(){
+  digitalWrite(trig,LOW); delayMicroseconds(2);
+  digitalWrite(trig,HIGH); delayMicroseconds(10); digitalWrite(trig,LOW);
+  unsigned long us=pulseIn(echo,HIGH,30000UL);
+  if(us==0) return -1;
+  return us/58.0;
+}
+void setup(){
+  pinMode(trig,OUTPUT); pinMode(echo,INPUT);
+  pinMode(red,OUTPUT); pinMode(yellow,OUTPUT); pinMode(green,OUTPUT);
+  Serial.begin(9600); lcd.init(); lcd.backlight();
+}
+void loop(){
+  float d=readCm();
+  digitalWrite(red,LOW); digitalWrite(yellow,LOW); digitalWrite(green,LOW);
+  lcd.setCursor(0,0);
+  if(d<0){
+    lcd.print("No Echo         "); lcd.setCursor(0,1); lcd.print("Check sensor    ");
+    Serial.println("No Echo");
+  } else {
+    const char* zone;
+    if(d<15){ digitalWrite(red,HIGH); zone="Red"; }
+    else if(d<=30){ digitalWrite(yellow,HIGH); zone="Yellow"; }
+    else { digitalWrite(green,HIGH); zone="Green"; }
+    lcd.print("Distance: "); lcd.print(d,1); lcd.print(" cm   ");
+    lcd.setCursor(0,1); lcd.print("Zone: "); lcd.print(zone); lcd.print("       ");
+    Serial.print(d); Serial.print(" cm - "); Serial.println(zone);
+  }
+}

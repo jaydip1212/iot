@@ -1,0 +1,50 @@
+QUESTION 08 - LOW-LIGHT SHELF STOCK MONITOR
+===========================================
+
+Problem
+Use light level and distance to identify low shelf stock. Alert only if stock is low and the area is Dim.
+
+Components and pins
+Arduino Uno; LDR A0; ultrasonic Trig D3, Echo D2; alert LED D13; green LED D11; I2C LCD SDA A4, SCL A5, address 0x27.
+
+Tasks (10 marks each)
+1. Read both sensors and define Bright/Dim.
+2. Treat distance above 25 cm as Stock Low; otherwise Stock OK.
+3. Alert in Dim + Stock Low; use green for Stock OK; report readings on Serial.
+
+ANSWER
+Calibrate the LDR; this sketch assumes above 512 means Dim. Change the comparison if your divider behaves oppositely. Ultrasonic distance is duration / 58.0.
+
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27,16,2);
+const int lightPin=A0, trig=3, echo=2, alertLed=13, greenLed=11;
+const int lightThreshold=512;
+float readCm(){
+  digitalWrite(trig,LOW); delayMicroseconds(2);
+  digitalWrite(trig,HIGH); delayMicroseconds(10); digitalWrite(trig,LOW);
+  unsigned long us=pulseIn(echo,HIGH,30000UL);
+  if(us==0) return -1;
+  return us/58.0;
+}
+void setup(){
+  pinMode(trig,OUTPUT); pinMode(echo,INPUT);
+  pinMode(alertLed,OUTPUT); pinMode(greenLed,OUTPUT);
+  Serial.begin(9600); lcd.init(); lcd.backlight();
+}
+void loop(){
+  int light=analogRead(lightPin);
+  bool dim=light>lightThreshold;
+  float d=readCm();
+  bool lowStock=d>25;
+  bool stockOk=d>=0 && !lowStock;
+  digitalWrite(alertLed,(dim && lowStock)?HIGH:LOW);
+  digitalWrite(greenLed,stockOk?HIGH:LOW);
+  lcd.setCursor(0,0); lcd.print("Distance: ");
+  if(d<0) lcd.print("No Echo   "); else { lcd.print(d,1); lcd.print(" cm   "); }
+  lcd.setCursor(0,1);
+  if(d<0) lcd.print("Sensor error    ");
+  else lcd.print(lowStock?"Stock Low ":"Stock OK  ");
+  lcd.print(dim?"Dim ":"Bright");
+  Serial.print("LDR="); Serial.print(light); Serial.print(" distance="); Serial.print(d); Serial.print(" state=");
+  Serial.println(lowStock?"Stock Low":"Stock OK");
+}

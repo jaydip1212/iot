@@ -1,0 +1,26 @@
+ARDUINO IOT PRACTICE QUESTIONS AND ANSWERS
+==========================================
+
+Practice predictions based on the assignments and sample paper; these are not guaranteed exam questions.
+Each file contains a 30-mark question and an example answer/sketch.
+
+01  ldr_ir_shelf.txt             LDR + IR shelf security
+02  ultrasonic_parking.txt       Ultrasonic parking verification
+03  ldr_ir_wave_game.txt         LDR + IR timed hand-wave game
+04  ldr_ir_room_light.txt        LDR + IR automatic room light
+05  ir_object_counter.txt        IR timed object counter
+06  dual_ir_people_count.txt     Two IR sensors, direction and count
+07  ultrasonic_led_signal.txt    Ultrasonic distance zones + LEDs
+08  ldr_ultrasonic_stock.txt     LDR + ultrasonic shelf stock monitor
+09  ir_desk_timer.txt            IR presence-duration timer
+10  ldr_ir_gate.txt              LDR + IR timed event counter
+11  ir_ultrasonic_counter.txt    IR + ultrasonic confirmed counter
+12  ldr_ir_us_intrusion.txt      LDR + IR + ultrasonic security alert
+
+COMMON NOTES
+------------
+- Use Arduino Uno and the components listed in each question.
+- The examples treat IR LOW (0) as object detected. Confirm the module behavior.
+- Calibrate each LDR threshold. Divider/module wiring can make readings rise or fall as light decreases.
+- Timed sessions use millis() so the program can keep checking sensors.
+- LCD sketches use LiquidCrystal_I2C at address 0x27; install that library if needed.
