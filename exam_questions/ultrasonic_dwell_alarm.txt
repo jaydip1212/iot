@@ -1,0 +1,47 @@
+QUESTION 17 - ULTRASONIC DWELL-TIME ALARM
+=========================================
+
+Problem
+Measure how long an object remains within 20 cm. Turn on an alert LED if it stays in the zone for more than 10 seconds.
+
+Components and pins
+Arduino Uno; ultrasonic Trig D3, Echo D2; alert LED D13; I2C LCD SDA A4, SCL A5, address 0x27.
+
+Tasks (10 marks each)
+1. Measure and display distance.
+2. Start timing when an object enters the 20 cm zone; reset when it leaves.
+3. Show elapsed time and alert after 10 seconds in the zone.
+
+ANSWER
+A reading of 0 means no echo, so the program treats it as outside the zone. This basic version resets the timer immediately when the object leaves the threshold.
+
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27,16,2);
+const int trig=3, echo=2, led=13;
+bool inZone=false;
+unsigned long enteredAt=0;
+float readCm(){
+  digitalWrite(trig,LOW); delayMicroseconds(2);
+  digitalWrite(trig,HIGH); delayMicroseconds(10); digitalWrite(trig,LOW);
+  unsigned long us=pulseIn(echo,HIGH,30000UL);
+  if(us==0) return -1;
+  return us/58.0;
+}
+void setup(){
+  pinMode(trig,OUTPUT); pinMode(echo,INPUT); pinMode(led,OUTPUT);
+  Serial.begin(9600); lcd.init(); lcd.backlight();
+}
+void loop(){
+  unsigned long now=millis();
+  float d=readCm();
+  bool near=(d>=0 && d<20);
+  if(near && !inZone){ inZone=true; enteredAt=now; }
+  if(!near) inZone=false;
+  unsigned long elapsed=inZone?(now-enteredAt)/1000UL:0;
+  bool alarm=inZone && now-enteredAt>=10000UL;
+  digitalWrite(led,alarm?HIGH:LOW);
+  lcd.setCursor(0,0); lcd.print("Distance: ");
+  if(d<0) lcd.print("No Echo   "); else { lcd.print(d,1); lcd.print("cm   "); }
+  lcd.setCursor(0,1); lcd.print("Time:"); lcd.print(elapsed); lcd.print("s "); lcd.print(alarm?"ALERT":"OK   ");
+  Serial.print("Distance="); Serial.print(d); Serial.print("cm dwell="); Serial.println(elapsed);
+}

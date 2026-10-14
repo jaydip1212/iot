@@ -1,0 +1,42 @@
+QUESTION 19 - ULTRASONIC APPROACH COUNTER
+=========================================
+
+Problem
+Count an approach when an object moves within 10 cm. Do not count it again until it moves beyond 15 cm, preventing repeated counts from noisy readings near one threshold.
+
+Components and pins
+Arduino Uno; ultrasonic Trig D3, Echo D2; green LED D11; I2C LCD SDA A4, SCL A5, address 0x27; Serial Monitor.
+
+Tasks (10 marks each)
+1. Measure and print distance.
+2. Count an approach below 10 cm and re-arm only above 15 cm.
+3. Display the total and show whether the sensor is armed or tracking an object.
+
+ANSWER
+The two thresholds create hysteresis: the object must move farther away than the entry threshold before a new approach can be counted.
+
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27,16,2);
+const int trig=3, echo=2, led=11;
+bool armed=true;
+int count=0;
+float readCm(){
+  digitalWrite(trig,LOW); delayMicroseconds(2);
+  digitalWrite(trig,HIGH); delayMicroseconds(10); digitalWrite(trig,LOW);
+  unsigned long us=pulseIn(echo,HIGH,30000UL);
+  if(us==0) return -1;
+  return us/58.0;
+}
+void setup(){
+  pinMode(trig,OUTPUT); pinMode(echo,INPUT); pinMode(led,OUTPUT);
+  Serial.begin(9600); lcd.init(); lcd.backlight();
+}
+void loop(){
+  float d=readCm();
+  if(armed && d>=0 && d<10){ count++; armed=false; }
+  if(!armed && d>15) armed=true;
+  digitalWrite(led,(!armed)?HIGH:LOW);
+  lcd.setCursor(0,0); lcd.print("Approaches: "); lcd.print(count); lcd.print("   ");
+  lcd.setCursor(0,1); lcd.print(armed?"Ready           ":"Object detected ");
+  Serial.print("Distance="); Serial.print(d); Serial.print(" Count="); Serial.println(count);
+}

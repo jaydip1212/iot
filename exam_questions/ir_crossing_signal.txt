@@ -1,0 +1,51 @@
+QUESTION 18 - IR PEDESTRIAN CROSSING SIGNAL
+===========================================
+
+Problem
+An IR sensor detects a pedestrian request. Run a safe signal sequence: vehicle green, yellow for 2 seconds, pedestrian red/stop for 5 seconds, then yellow for 2 seconds before returning to green.
+
+Components and pins
+Arduino Uno; IR OUT D2 (LOW = request); vehicle green D11, yellow D12, red D13; Serial Monitor.
+
+Tasks (10 marks each)
+1. Detect a pedestrian request and report sensor state.
+2. Implement the timed yellow-red-yellow sequence without long delays.
+3. Prevent a held sensor from restarting the sequence; return to green after completion.
+
+ANSWER
+The LED labels describe the vehicle signal; red means vehicles stop so pedestrians can cross. A request is accepted once until the IR sensor clears.
+
+const int irPin=2, green=11, yellow=12, red=13;
+enum SignalState {VEHICLE_GO, TO_STOP, CROSSING, TO_GO};
+SignalState state=VEHICLE_GO;
+bool requestLocked=false;
+unsigned long stateAt=0, lastPrint=0;
+void setSignal(){
+  digitalWrite(green,state==VEHICLE_GO?HIGH:LOW);
+  digitalWrite(yellow,(state==TO_STOP||state==TO_GO)?HIGH:LOW);
+  digitalWrite(red,state==CROSSING?HIGH:LOW);
+}
+void setup(){
+  pinMode(irPin,INPUT); pinMode(green,OUTPUT); pinMode(yellow,OUTPUT); pinMode(red,OUTPUT);
+  Serial.begin(9600); setSignal();
+}
+void loop(){
+  unsigned long now=millis();
+  bool request=digitalRead(irPin)==LOW;
+  if(!request) requestLocked=false;
+  if(state==VEHICLE_GO && request && !requestLocked){
+    requestLocked=true; state=TO_STOP; stateAt=now;
+  }
+  if(state==TO_STOP && now-stateAt>=2000UL){ state=CROSSING; stateAt=now; }
+  else if(state==CROSSING && now-stateAt>=5000UL){ state=TO_GO; stateAt=now; }
+  else if(state==TO_GO && now-stateAt>=2000UL){ state=VEHICLE_GO; stateAt=now; }
+  setSignal();
+  if(now-lastPrint>=250){
+    lastPrint=now;
+    Serial.print("IR="); Serial.print(request?"Request":"Clear"); Serial.print(" state=");
+    if(state==VEHICLE_GO) Serial.println("Vehicle green");
+    else if(state==TO_STOP) Serial.println("Vehicle yellow");
+    else if(state==CROSSING) Serial.println("Vehicle red / cross");
+    else Serial.println("Vehicle yellow");
+  }
+}

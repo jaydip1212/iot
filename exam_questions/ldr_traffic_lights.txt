@@ -1,0 +1,43 @@
+QUESTION 16 - DAY/NIGHT TRAFFIC LIGHT SEQUENCE
+===============================================
+
+Problem
+Use an LDR to run a red-yellow-green LED sequence only when the environment is Dim. Turn all LEDs off in Bright conditions.
+
+Components and pins
+Arduino Uno; LDR A0; red LED D13; yellow LED D12; green LED D11; Serial Monitor.
+
+Tasks (10 marks each)
+1. Print LDR readings and Bright/Dim state.
+2. Turn off all LEDs in Bright conditions.
+3. In Dim conditions, cycle red, yellow, green for 2 seconds each without blocking delays.
+
+ANSWER
+Calibrate threshold for your circuit; this example assumes values above 512 mean Dim. millis() times each LED state.
+
+const int ldr=A0, red=13, yellow=12, green=11, threshold=512;
+const int lights[]={red,yellow,green};
+int phase=0;
+bool wasDim=false;
+unsigned long phaseAt=0, lastPrint=0;
+void setup(){
+  pinMode(red,OUTPUT); pinMode(yellow,OUTPUT); pinMode(green,OUTPUT);
+  Serial.begin(9600);
+}
+void loop(){
+  unsigned long now=millis();
+  int value=analogRead(ldr);
+  bool dim=value>threshold;
+  if(!dim){
+    digitalWrite(red,LOW); digitalWrite(yellow,LOW); digitalWrite(green,LOW);
+    phase=0; wasDim=false;
+  } else {
+    if(!wasDim){ phase=0; phaseAt=now; wasDim=true; }
+    if(now-phaseAt>=2000UL){ phase=(phase+1)%3; phaseAt=now; }
+    for(int i=0;i<3;i++) digitalWrite(lights[i],i==phase?HIGH:LOW);
+  }
+  if(now-lastPrint>=500){
+    lastPrint=now; Serial.print("LDR="); Serial.print(value);
+    Serial.println(dim?" Dim":" Bright");
+  }
+}

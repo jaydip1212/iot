@@ -1,0 +1,64 @@
+QUESTION 15 - IR REACTION-TIME GAME
+===================================
+
+Problem
+Measure the player's reaction time. After the player starts a round, wait a random 2-5 seconds, turn on a signal LED, then time the first hand wave at the IR sensor.
+
+Components and pins
+Arduino Uno; IR OUT D2 (LOW = detected); green signal LED D11; red false-start LED D13; Serial Monitor.
+
+Tasks (10 marks each)
+1. Start a round by entering S in Serial Monitor and wait a random interval.
+2. Detect a hand wave after the signal and measure reaction time in milliseconds.
+3. Reject false starts, report the result, and allow another round.
+
+ANSWER
+Keep the hand away when sending S. A detection before the green LED is a false start. The red LED flashes on a false start; reset by sending S again.
+
+const int irPin=2, green=11, red=13;
+const unsigned long responseLimit=5000UL;
+enum GameState {WAIT_START, WAIT_SIGNAL, WAIT_RESPONSE, FINISHED};
+GameState state=WAIT_START;
+bool wasDetected=false;
+unsigned long signalAt=0, signalDelay=0, roundAt=0;
+void setup(){
+  pinMode(irPin,INPUT); pinMode(green,OUTPUT); pinMode(red,OUTPUT);
+  Serial.begin(9600); randomSeed(analogRead(A1));
+  Serial.println("Send S to start; keep hand clear.");
+}
+void loop(){
+  unsigned long now=millis();
+  bool detected=digitalRead(irPin)==LOW;
+  bool newWave=detected && !wasDetected;
+  wasDetected=detected;
+  if(state==WAIT_START && Serial.available()){
+    char key=Serial.read();
+    if(key=='s'||key=='S'){
+      signalDelay=random(2000,5001); roundAt=now; state=WAIT_SIGNAL;
+      digitalWrite(green,LOW); digitalWrite(red,LOW);
+      Serial.println("Wait for green...");
+    }
+  } else if(state==WAIT_SIGNAL){
+    if(newWave){
+      digitalWrite(red,HIGH); Serial.println("False start. Send S to try again."); state=FINISHED;
+    } else if(now-roundAt>=signalDelay){
+      digitalWrite(green,HIGH); signalAt=now; state=WAIT_RESPONSE;
+      Serial.println("GO!");
+    }
+  } else if(state==WAIT_RESPONSE){
+    if(newWave){
+      digitalWrite(green,LOW);
+      Serial.print("Reaction time: "); Serial.print(now-signalAt); Serial.println(" ms");
+      state=FINISHED;
+    } else if(now-signalAt>=responseLimit){
+      digitalWrite(green,LOW); Serial.println("Time expired. Send S to try again."); state=FINISHED;
+    }
+  } else if(state==FINISHED && Serial.available()){
+    char key=Serial.read();
+    if(key=='s'||key=='S'){
+      digitalWrite(red,LOW); digitalWrite(green,LOW);
+      signalDelay=random(2000,5001); roundAt=now; state=WAIT_SIGNAL;
+      Serial.println("Wait for green...");
+    }
+  }
+}

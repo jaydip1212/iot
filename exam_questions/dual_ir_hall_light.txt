@@ -1,0 +1,40 @@
+QUESTION 20 - TWO-SENSOR HALLWAY LIGHT
+======================================
+
+Problem
+Use two IR sensors at opposite ends of a hallway. Turn a light on while either end detects a person, then keep it on for 20 seconds after both sensors are clear.
+
+Components and pins
+Arduino Uno; IR sensor A OUT D2 and sensor B OUT D4 (LOW = detected); lamp LED D13; Serial Monitor.
+
+Tasks (10 marks each)
+1. Read and report both IR sensors.
+2. Turn on the lamp when either sensor detects a person.
+3. After both become clear, hold the lamp on for 20 seconds; a new detection restarts the timer.
+
+ANSWER
+The two sensors are combined with OR logic. The timer begins only after both sensors are clear.
+
+const int sensorA=2, sensorB=4, lamp=13;
+bool holdActive=false;
+unsigned long clearSince=0, lastPrint=0;
+void setup(){
+  pinMode(sensorA,INPUT); pinMode(sensorB,INPUT); pinMode(lamp,OUTPUT);
+  Serial.begin(9600);
+}
+void loop(){
+  unsigned long now=millis();
+  bool a=digitalRead(sensorA)==LOW;
+  bool b=digitalRead(sensorB)==LOW;
+  bool occupied=a||b;
+  if(occupied) holdActive=false;
+  else if(!holdActive){ clearSince=now; holdActive=true; }
+  bool lampOn=occupied || (holdActive && now-clearSince<20000UL);
+  digitalWrite(lamp,lampOn?HIGH:LOW);
+  if(now-lastPrint>=300){
+    lastPrint=now;
+    Serial.print("A="); Serial.print(a?"Person":"Clear");
+    Serial.print(" B="); Serial.print(b?"Person":"Clear");
+    Serial.print(" Lamp="); Serial.println(lampOn?"ON":"OFF");
+  }
+}

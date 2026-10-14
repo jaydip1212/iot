@@ -1,0 +1,53 @@
+QUESTION 14 - ULTRASONIC TANK LEVEL
+===================================
+
+Problem
+Estimate water level in a 100 cm tank by measuring the distance from an ultrasonic sensor mounted above the water.
+
+Components and pins
+Arduino Uno; ultrasonic Trig D3, Echo D2; red LED D13; yellow LED D12; green LED D11; I2C LCD SDA A4, SCL A5, address 0x27.
+
+Tasks (10 marks each)
+1. Measure sensor-to-water distance and handle a missing echo.
+2. Calculate water depth and percentage full for a 100 cm tank.
+3. Display level and use red below 25%, yellow 25-75%, green above 75%.
+
+ANSWER
+Mount the sensor at the tank top. This assumes the empty tank measures 100 cm from sensor to bottom; adjust tankHeight to your tank.
+
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27,16,2);
+const int trig=3, echo=2, red=13, yellow=12, green=11;
+const float tankHeight=100.0;
+float readCm(){
+  digitalWrite(trig,LOW); delayMicroseconds(2);
+  digitalWrite(trig,HIGH); delayMicroseconds(10); digitalWrite(trig,LOW);
+  unsigned long us=pulseIn(echo,HIGH,30000UL);
+  if(us==0) return -1;
+  return us/58.0;
+}
+void setup(){
+  pinMode(trig,OUTPUT); pinMode(echo,INPUT);
+  pinMode(red,OUTPUT); pinMode(yellow,OUTPUT); pinMode(green,OUTPUT);
+  Serial.begin(9600); lcd.init(); lcd.backlight();
+}
+void loop(){
+  float gap=readCm();
+  digitalWrite(red,LOW); digitalWrite(yellow,LOW); digitalWrite(green,LOW);
+  if(gap<0){
+    lcd.setCursor(0,0); lcd.print("No echo         ");
+    lcd.setCursor(0,1); lcd.print("Check sensor    ");
+    Serial.println("No echo");
+  } else {
+    float depth=tankHeight-gap;
+    if(depth<0) depth=0;
+    if(depth>tankHeight) depth=tankHeight;
+    int percent=(int)(depth*100.0/tankHeight);
+    if(percent<25) digitalWrite(red,HIGH);
+    else if(percent<=75) digitalWrite(yellow,HIGH);
+    else digitalWrite(green,HIGH);
+    lcd.setCursor(0,0); lcd.print("Water level:    ");
+    lcd.setCursor(0,1); lcd.print(percent); lcd.print("% "); lcd.print(depth,1); lcd.print("cm      ");
+    Serial.print("Gap="); Serial.print(gap); Serial.print("cm Level="); Serial.print(percent); Serial.println("%");
+  }
+}

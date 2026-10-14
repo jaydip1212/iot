@@ -1,0 +1,37 @@
+QUESTION 13 - THREE-LEVEL LIGHT INDICATOR
+=========================================
+
+Problem
+Use an LDR to classify the room as Bright, Normal, or Dim and indicate the state with one of three LEDs.
+
+Components and pins
+Arduino Uno; LDR module AO A0; green LED D11; yellow LED D12; red LED D13; Serial Monitor.
+
+Tasks (10 marks each)
+1. Print the analog LDR value continuously.
+2. Use thresholds to classify Bright, Normal, and Dim.
+3. Turn on green for Bright, yellow for Normal, red for Dim; print the state.
+
+ANSWER
+Calibrate these example thresholds for your LDR circuit. This sketch assumes larger values mean darker conditions.
+
+const int ldr=A0, green=11, yellow=12, red=13;
+const int brightLimit=300, dimLimit=700;
+unsigned long lastPrint=0;
+void setup(){
+  pinMode(green,OUTPUT); pinMode(yellow,OUTPUT); pinMode(red,OUTPUT);
+  Serial.begin(9600);
+}
+void loop(){
+  int value=analogRead(ldr);
+  bool bright=value<brightLimit;
+  bool dim=value>dimLimit;
+  digitalWrite(green,bright?HIGH:LOW);
+  digitalWrite(yellow,(!bright && !dim)?HIGH:LOW);
+  digitalWrite(red,dim?HIGH:LOW);
+  if(millis()-lastPrint>=300){
+    lastPrint=millis();
+    Serial.print("LDR="); Serial.print(value); Serial.print(" State=");
+    Serial.println(bright?"Bright":(dim?"Dim":"Normal"));
+  }
+}

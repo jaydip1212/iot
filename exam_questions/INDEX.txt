@@ -16,6 +16,14 @@ Each file contains a 30-mark question and an example answer/sketch.
 10  ldr_ir_gate.txt              LDR + IR timed event counter
 11  ir_ultrasonic_counter.txt    IR + ultrasonic confirmed counter
 12  ldr_ir_us_intrusion.txt      LDR + IR + ultrasonic security alert
+13  ldr_level_lights.txt         LDR brightness levels + LEDs
+14  ultrasonic_tank_level.txt    Ultrasonic tank depth and level
+15  ir_reaction_game.txt         IR reaction-time game
+16  ldr_traffic_lights.txt       LDR-controlled traffic LED sequence
+17  ultrasonic_dwell_alarm.txt   Ultrasonic presence-duration alarm
+18  ir_crossing_signal.txt       IR pedestrian crossing sequence
+19  ultrasonic_hysteresis_counter.txt  Ultrasonic approach counter
+20  dual_ir_hall_light.txt       Two-IR hallway lighting
 
 COMMON NOTES
 ------------
